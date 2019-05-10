@@ -1,0 +1,250 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "BLOGC\-GIT\-RECEIVER" "1" "May 2019" "Rafael G. Martins" "blogc Manual"
+.
+.SH "NAME"
+\fBblogc\-git\-receiver\fR \- a simple login shell/git hook to deploy blogc websites
+.
+.SH "SYNOPSIS"
+chsh \-s $(command \-v \fBblogc\-git\-receiver\fR) \fIuser\fR
+.
+.SH "DESCRIPTION"
+\fBblogc\-git\-receiver\fR provides a PaaS\-like way to deploy blogc(1) websites\. When used as a login shell, it will accept git payloads, creating bare repositories as needed, and installing a hook, that will take care of rebuilding the website each time someone push something to the \fBmaster\fR branch\.
+.
+.P
+The git repository must provide a blogcfile(5) (if blogc\-make(1) is installed), or a \fBMakefile\fR (or a \fBGNUMakefile\fR) that should accept the \fBOUTPUT_DIR\fR variable, and install built files into the directory pointed out by this variable\.
+.
+.P
+\fBblogc\-git\-receiver\fR is part of \fBblogc\fR project, but isn\'t tied to blogc(1) or blogc\-make(1)\. Any repository with \fBMakefile\fR that builds content and install it to \fBOUTPUT_DIR\fR should work with \fBblogc\-git\-receiver\fR\.
+.
+.SH "SETUP"
+After creating an user (\fBblogc\fR for the examples), change its shell to blogc\-git\-receiver(1):
+.
+.IP "" 4
+.
+.nf
+
+# chsh \-s $(command \-v blogc\-git\-receiver) blogc
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Now add ssh keys to \fB/home/blogc/\.ssh/authorized_keys\fR\. Every key in \fBauthorized_keys\fR will be allowed to push to the git repositories, and even create new ones\. It is also possible to add \fBblogc\-git\-receiver\fR as a command in the \fBauthorized_keys\fR file for each key, but this setup is slightly more tricky, as you may leak shell access to an user by mystake, if you forget to add the command to a key that should not have shell access\. Only use this method if you don\'t have another option (e\.g\. in shared hosting environments that only provide one shell account), or if you know exactly what you are doing\.
+.
+.P
+Also, make sure to install all the dependencies required by the websites, including a web server\. \fBblogc\-git\-receiver\fR can\'t handle web server virtual hosts\.
+.
+.P
+To deploy a website (e\.g\. blogc example repository):
+.
+.IP "" 4
+.
+.nf
+
+$ git clone https://github\.com/blogc/blogc\-example\.git
+$ cd blogc\-example
+$ git remote add blogc blogc@${SERVER_IP}:blogs/blogc\-example\.git
+$ git push blogc master
+.
+.fi
+.
+.IP "" 0
+.
+.P
+This will deploy the example to the server, creating a symlink to the built content in \fB/home/blogc/repos/blogs/blogc\-example\.git/htdocs\fR\. This symlink should be used as the document root for the web server virtual host\. If this symlink can\'t be readed by your webserver for some reason, you can create it in some other directory by adding the full symlink path to the ~/blogc\-git\-receiver\.ini configuration file:
+.
+.IP "" 4
+.
+.nf
+
+$ $EDITOR ~/blogc\-git\-receiver\.ini
+[repo:blogs/blogc\-example\.git]
+symlink=/path/to/my/symlink
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Do not duplicate the section if it already exists, just append the symlink path to it\.
+.
+.SS "Rebuild last successful build"
+If for some reason you want to rebuild the last successful build of a given website, you can run its \fBpre\-receive\fR hook manually in the server:
+.
+.IP "" 4
+.
+.nf
+
+# su \-s /bin/sh \- blogc
+$ cd ~/repos/blogs/blogc\-example\.git
+$ \./hooks/pre\-receive
+.
+.fi
+.
+.IP "" 0
+.
+.P
+This should re\-run the last build as if it was pushed to git\.
+.
+.SS "Setup with SELinux enabled (Fedora)"
+Supposing the usage of nginx as webserver, running as the \fBnginx\fR user:
+.
+.IP "" 4
+.
+.nf
+
+# dnf install \-y nginx policycoreutils\-python\-utils
+# useradd \-m \-s $(command \-v blogc\-git\-receiver) blogc
+# gpasswd \-a nginx blogc
+# chmod \-R g+rx /home/blogc
+# su \-c "mkdir /home/blogc/{builds,repos}" \-s /bin/sh blogc
+# semanage fcontext \-a \-t httpd_sys_content_t "/home/blogc/(builds|repos)(/\.*)?"
+# restorecon \-R \-v /home/blogc
+# systemctl restart nginx
+.
+.fi
+.
+.IP "" 0
+.
+.P
+After running these commands, the machine is ready to be used\.
+.
+.SH "REPOSITORY MIRRORING"
+Users can rely on \fBblogc\-git\-receiver\fR to mirror repositories to a remote Git repository (e\.g\. a free Bitbucket private repository)\.
+.
+.P
+Please note that the \fBblogc\fR user must be able to push to the remote repository, and that any content manually pushed to the remote repository is overwritten by \fBblogc\-git\-receiver\fR\.
+.
+.P
+Some reasonable ways to allow the \fBblogc\fR user to push to the remote repository are:
+.
+.IP "\(bu" 4
+Create a password\-less SSH key\. The key \fImust\fR be password\-less, because the push is automatic, and remote git hooks can\'t be interactive\.
+.
+.IP "\(bu" 4
+Create an oauth token in the hosting service (if it supports oauth authentication in git, e\.g\. GitHub) and add it to the git URL\.
+.
+.IP "" 0
+.
+.P
+The mirroring feature wont\'t block a \fBgit push\fR, it will just raise warnings\. That means that if an error happens when mirroring the repository, the deploy will still succeed\. Users should pay attention to the git hook logs, to avoid losing data due to repositories not being mirrored\.
+.
+.P
+This feature just requires adding a remote called \fBmirror\fR to the bare repository in the server, or creating a configuration file (~/blogc\-git\-receiver\.ini), that is a simple INI\-style file where each repository is represented by a section and the value of the \fBmirror\fR variable is the URL that should be used to push\.
+.
+.P
+Edit configuration file (recommended, do not duplicate the section if it already exists, just append the mirror to it):
+.
+.IP "" 4
+.
+.nf
+
+# su \-s /bin/sh \- blogc
+$ $EDITOR ~/blogc\-git\-receiver\.ini
+[repo:myblog\.git]
+mirror=$YOUR_GIT_MIRROR_URL
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Or to add the \fBmirror\fR remote:
+.
+.IP "" 4
+.
+.nf
+
+# su \-s /bin/sh \- blogc
+$ cd repos
+$ git init \-\-bare myblog\.git  # if not created yet
+$ cd myblog\.git
+$ git remote add \-\-mirror=push mirror $YOUR_GIT_MIRROR_URL
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Both examples assume that your repository is named \fBmyblog\.git\fR\.
+.
+.SS "Caveats of repository mirroring with SSH"
+The authentication must be done with a password\-less SSH key created by the \fBblogc\fR user\.
+.
+.P
+As the \fBgit push \-\-mirror\fR call is automated, users must disable SSH strict host checking in SSH\'s \fB~/\.ssh/config\fR file:
+.
+.IP "" 4
+.
+.nf
+
+Host bitbucket\.org
+    StrictHostKeyChecking no
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The example uses \fBbitbucket\.org\fR as remote host, that should be changed if needed\.
+.
+.P
+To change this file, users must login with \fB/bin/sh\fR or any other "real" shell, as \fBroot\fR:
+.
+.IP "" 4
+.
+.nf
+
+# su \-s /bin/sh \- blogc
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Push to mirror manually"
+If for some reason you want to push the repository of a given website to remote mirror, you can run its \fBpost\-receive\fR hook manually in the server:
+.
+.IP "" 4
+.
+.nf
+
+# su \-s /bin/sh \- blogc
+$ cd ~/repos/blogs/blogc\-example\.git
+$ \./hooks/post\-receive
+.
+.fi
+.
+.IP "" 0
+.
+.P
+WARNING: If you push manually and your server\'s repository is empty, you\'ll clean your mirror repository\.
+.
+.SH "ENVIRONMENT"
+The following variables can be set in the SSH Server (usually in \fB~/\.ssh/environment\fR) to change \fBblogc\-git\-receiver\fR behaviour:
+.
+.TP
+\fBBLOGC_GIT_RECEIVER_BASE_DIR\fR
+Path to the base directory that should be used by \fBblogc\-git\-receiver\fR\. Defaults to user\'s home directory\. Useful for shared hosting environments that only provide one shell user\.
+.
+.TP
+\fBBLOGC_GIT_RECEIVER_BUILDS_DIR\fR
+Path to the directory that should be used to store the blogc builds\. Defaults to \fB$BLOGC_GIT_RECEIVER_BASE_DIR/builds\fR\. This directory must be readable by your webserver\. This variable is useful to keep your git repositories unreadable, while letting your webserver access the built files\. In this case, users need to also define custom symlinks for every repository in \fB$BLOGC_GIT_RECEIVER_BASE_DIR/blogc\-git\-receiver\.ini\fR, because the default \fBhtdocs\fR symlink inside the git repositories won\'t be acessible by the webserver\.
+.
+.P
+The following variable is exported by \fBblogc\-git\-receiver\fR when building websites with make(1):
+.
+.TP
+\fBBLOGC_GIT_RECEIVER=1\fR
+This variable can be used to enable building of content that should only be built when running in production environment, for example\. This variable will not be exported when using blogc\-make(1), whose builds are always considered to be "production" (blogc\-make(1) is never called with \fB\-D\fR)\.
+.
+.SH "BUGS"
+Please report any issues to: \fIhttps://github\.com/blogc/blogc\fR
+.
+.SH "AUTHOR"
+Rafael G\. Martins <\fIrafael@rafaelmartins\.eng\.br\fR>
+.
+.SH "SEE ALSO"
+blogc(1), git(1), git\-shell(1), chsh(1), su(1), make(1)

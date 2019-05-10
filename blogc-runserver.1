@@ -1,0 +1,62 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "BLOGC\-RUNSERVER" "1" "May 2019" "Rafael G. Martins" "blogc Manual"
+.
+.SH "NAME"
+\fBblogc\-runserver\fR \- a simple HTTP server to test blogc websites
+.
+.SH "SYNOPSIS"
+\fBblogc\-runserver\fR [\fB\-t\fR \fIHOST\fR] [\fB\-p\fR \fIPORT\fR] \fIDOCROOT\fR
+.
+.br
+\fBblogc\-runserver\fR [\fB\-h\fR|\fB\-v\fR]
+.
+.SH "DESCRIPTION"
+\fBblogc\-runserver\fR is a simple HTTP server that makes it easy to test blogc websites\. Users just need to point it to the directory where the target files where built\. It comes with a few pre\-defined rules, similar to production webservers, that allow users to quickly test their websites without configuring a webserver\.
+.
+.P
+\fBblogc\-runserver\fR is part of \fBblogc\fR project, but isn\'t tied to blogc(1)\. It may be able to serve any website built by static site generators\.
+.
+.SH "OPTIONS"
+.
+.TP
+\fB\-t\fR \fIHOST\fR
+HTTP server listen address, defaults to \fB127\.0\.0\.1\fR\.
+.
+.TP
+\fB\-p\fR \fIPORT\fR
+HTTP server listen port, defaults to \fB8080\fR\.
+.
+.TP
+\fB\-v\fR
+Show program name, version and exit\.
+.
+.TP
+\fB\-h\fR
+Show help message and exit\.
+.
+.SH "ARGUMENTS"
+.
+.TP
+\fIDOCROOT\fR
+HTTP server document root\.
+.
+.SH "ENVIRONMENT"
+.
+.TP
+\fBBLOGC_RUNSERVER_DEFAULT_HOST\fR
+Changes the default HTTP server listen address, if defined\.
+.
+.TP
+\fBBLOGC_RUNSERVER_DEFAULT_PORT\fR
+Changes the default HTTP server listen port, if defined\.
+.
+.SH "BUGS"
+Please report any issues to: \fIhttps://github\.com/blogc/blogc\fR
+.
+.SH "AUTHOR"
+Rafael G\. Martins <\fIrafael@rafaelmartins\.eng\.br\fR>
+.
+.SH "SEE ALSO"
+blogc(1)

@@ -1,0 +1,335 @@
+blogc-template(7) -- blogc's template format
+============================================
+
+## DESCRIPTION
+
+Template files are used as base to build output files by blogc(1). These files
+can include variables, blocks, conditionals and iterators, that will directly
+affect the output files.
+
+The syntax of the template files is defined to be simple, without affecting the
+content output. The syntax is somewhat inspired by Jinja2 syntax.
+
+Templates must be valid UTF-8.
+
+This manual describes the basic syntax and functionalities of template files.
+
+## TEMPLATE BLOCKS
+
+Template blocks are used to delimit content. The content inside a block will
+be included in the output file (or not) if the parameters passed to blogc(1)
+matches the requirements of the given block.
+
+Blocks can be defined more than once, but can't be nested.
+
+The available blocks are: `entry`, `listing` and `listing_once`.
+
+### entry block
+
+The content of an `entry` block is included in the output file when blogc(1)
+is called without `-l` option, and with only one source file. It is used to
+render a single entry of your blog/website. All the variables defined in the
+source file are available inside this block (see blogc-source(7)), and will
+override global variables (see blogc(1)).
+
+This is how an `entry` block is defined:
+
+    {% block entry %}
+    This content will only be included when rendering a single entry.
+    {% endblock %}
+
+### listing block
+
+The content of a `listing` block is included in the output file when blogc(1)
+is called with `-l` option, and with zero or more source files. It is used
+to create a listing of entries, and its content will be included once for
+each given source file (in the order that the source files were provided to
+blogc(1)). All the variables defined in the source files are available
+inside this block (see blogc-source(7)), and will override global variables
+(see blogc(1)). The variables will be provided by each file, when blogc(1)
+iterates over them.
+
+This is how a `listing` block is defined:
+
+    {% block listing %}
+    This content will be only included when rendering an entry listing, and
+    will be included once for each entry.
+    {% endblock %}
+
+### listing_once block
+
+The content of a `listing_once` block is included in the output file when
+blogc(1) is called with `-l` option, and with zero or more source files. It is
+like a `listing` block, but is only called once, and does not have access
+to the local variables defined in the source files. It is useful to add
+something before an entry listing.
+
+The content of a `listing_once` block is included even if no source file is
+provided.
+
+This is how a `listing_once` block is defined:
+
+    {% block listing_once %}
+    This content will be only included when rendering an entry listing, but
+    will be included only once.
+    {% endblock %}
+
+This is a 'real life' usage example of a `listing_once` block, supposing
+that the `TITLE` variable is defined:
+
+    {% block listing_once %}
+    <ul>
+    {% endblock %}
+    {% block listing %}
+    <li>{{ TITLE }}</li>
+    {% endblock %}
+    {% block listing_once %}
+    </ul>
+    {% endblock %}
+
+### listing_entry block
+
+This block is identical to the `entry` block, but its content is included in
+the output file only when blogc(1) is called with `-l` and `-e` <SOURCE>. The
+variables available in the block are provided by the source file provided
+using `-e`.
+
+This is how a `listing_entry` block is defined:
+
+    {% block listing_entry %}
+    This content will only be included when rendering a listing, but with
+    content provided by a single entry.
+    {% endblock %}
+
+
+## TEMPLATE VARIABLES
+
+Template variables are used to provide content to templates from blogc(1)
+command-line and from source files.
+
+This is how a variable is defined in a template:
+
+    {{ VARIABLE_NAME }}
+
+The value of a variable will depends of its scope. Global variables provided
+to blogc(1) are available everywhere in the templates. Local variables
+provided in the source files are available only inside `entry` and `listing`
+blocks, and will override global variables.
+
+If a variable is not defined, it will be replaced by an empty string. blogc(1)
+won't raise any error in this case.
+
+Variables are always strings, even if the value of the variable is a number,
+it is handled as a string by blogc(1).
+
+### Variable formatters
+
+blogc(1) can apply a formatter to a variable, depending on how it is called
+in the template. If user append `_FORMATTED` to the end of the variable name,
+a formatter will be applied, if available for the variable name:
+
+- Date formatter: if variable name starts with `DATE_`, it is formatted with
+  a strftime(3) format, provided by `DATE_FORMAT` variable. The `DATE_FORMATTED`
+  "meta-variable" will return the formatted version of the `DATE` variable.
+  If `DATE_FORMAT` is not provided, the original value will be returned.
+
+An existing variable is not overrided by formatter. That means that if
+`FOO_FORMATTED` variable exists, it won't be handled as a formatter
+"meta-variable", and `FOO_FORMATTED` variable value will be returned normally.
+
+### Truncated variables
+
+blogc(1) can truncate the value of a variable to a maximum length, if it is
+called with the maximum length appended to the end of the variable, like:
+`FOO_5` will return the 5 first characters of the `FOO` variable, if bigger
+than 5 characters.
+
+This is applicable to the "meta-variables", like `DATE_FORMATTED`. It can
+be truncated like: `DATE_FORMATTED_5`, that will return the 5 first
+characters of the `DATE_FORMATTED` "meta-variable".
+
+An existing variable is not overrided by the truncate syntax. That means
+that if `FOO_5` variable exists, it won't be handled as a truncate
+"meta-variable", and `FOO_5` variable value will be returned normally.
+
+## PREDEFINED TEMPLATE VARIABLES
+
+blogc(1) provides some template variables, that can be used to display some build
+metadata in your website.
+
+If some of the variables are not available in the system running the build, they
+won't be defined. It is recommended to rely on template conditionals, mainly
+`ifdef` and `ifndef` when using these variables.
+
+### Static variables
+
+These variables are always available, and are set during the blogc(1) binary
+compilation.
+
+ * `BLOGC_VERSION`:
+   The version of blogc(1) used to build. e.g.: `blogc 0.14.1`.
+
+### Resource usage variables
+
+It is not possible to measure the resource usage of blogc(1) until the end of
+the execution, because the rendering of these variables itself is using resources,
+and the evaluation of the used resources was already done. To get better values,
+it is recommended to use these variables only in the website footer.
+
+ * `BLOGC_RUSAGE_CPU_TIME`:
+   The CPU time used to build, up to the point where this variable was used for
+   the first time in the template (value is cached). e.g.: `12.345ms`.
+
+ * `BLOGC_RUSAGE_MEMORY`:
+   The memory used to build, up to the point where this variable was used for the
+   first time in the template (value is cached). e.g.: `1.234MB`.
+
+### System information variables
+
+ * `BLOGC_SYSINFO_HOSTNAME`:
+   The hostname of the machine where the build happened (short hostname only, not
+   FQDN).
+
+ * `BLOGC_SYSINFO_USERNAME`:
+   The username of the user that executed the build.
+
+ * `BLOGC_SYSINFO_DATETIME`:
+   The GMT datetime of the build. e.g. `2019-02-10 22:00:00`.
+
+ * `BLOGC_SYSINFO_INSIDE_DOCKER`:
+   If built inside a docker container, this variable will be defined, with value `1`.
+
+## TEMPLATE CONDITIONALS
+
+Template conditionals are used to include content to the output, or not,
+based on the value and existence of variables in the current scope.
+
+The implementation of conditionals is simple, and each will just evaluate the
+value of a single variable.
+
+The available conditionals are: `ifdef`, `ifndef` and `if`. `else` statements
+are supported.
+
+### ifdef conditional
+
+The content of an `ifdef` conditional is included in the output file when
+the given variable is defined in the current scope.
+
+This is how an `ifdef` conditional is defined in a template:
+
+    {% ifdef TITLE %}
+    This is title: {{ TITLE }}
+    {% else %}
+    Untitled entry
+    {% endif %}
+
+In this case, if the `TITLE` variable is defined, the content after the statement
+is included. Otherwise, the content after `else` statement is included.
+
+### ifndef conditional
+
+The content of an `ifndef` conditional is included in the output file when
+the given variable is not defined in the current scope.
+
+This is how an `ifndef` conditional is defined in a template:
+
+    {% ifndef TITLE %}
+    Untitled entry
+    {% endif %}
+
+In this case, if the `TITLE` variable is not defined, the content is included.
+`else` statements are supported here, even if it does not makes much sense to
+be used this way.
+
+### if conditional
+
+The content of an `if` conditional is included in the output file when
+the comparision between the given variable and the given static string or
+variable evaluates to true in the current scope. The left operand of the
+comparision *must* be a variable.
+
+The available operators are: `==`, `!=`, `<`, `>`, `<=` and `>=`. The
+comparisions are strcmp(3)-like.
+
+This is how an `if` conditional is defined in a template:
+
+    {% if TITLE == "My Title" %}
+    Special description of "My Title"
+    {% else %}
+    Title is {{ TITLE }}
+    {% endif %}
+
+Or:
+
+    {% if TITLE == DEFAULT_TITLE %}
+    Title is the default title
+    {% endif %}
+
+## TEMPLATE ITERATORS
+
+Template iterators are used to iterate over the value of a variable, that is handled
+as a list.
+
+The available conditionals are: `foreach`.
+
+### foreach iterator
+
+The content of a `foreach` iterator is included in the output file when the target
+variable is defined, and is repeated for each item in the list parsed from the variable
+value.
+
+The variable value should be formatted as a space-separated list of items. Quotes are
+not supported, as this is intended to work with identifiers, like slugs, and not with
+arbitrary strings.
+
+This is how a variable value would be formatted:
+
+    item1 item2 item3
+
+For more info about how to define variables, see blogc(1) and blogc-source(7).
+
+This is how a `foreach` iterator is defined in a template:
+
+    {% foreach TAGS %}
+    <a href="/tag/{{ FOREACH_ITEM }}/">{{ FOREACH_ITEM }}</a>
+    {% endforeach %}
+
+Where `TAGS` is the variable with space-separated list of items, and `FOREACH_ITEM`
+is the variable defined by blogc(1), that will store the item value for a given
+iteration.
+
+If the value of the `TAGS` variable is "item1 item2 item3", this template is
+rendered 3 times, one for each item value.
+
+The `FOREACH_ITEM` variable can be truncated, like:
+
+    {% foreach TAGS %}
+    <a href="/tag/{{ FOREACH_ITEM }}/">{{ FOREACH_ITEM_5 }}</a>
+    {% endforeach %}
+
+## WHITESPACE CONTROL
+
+Users can control how whitespaces (space, form-feed (`\f`), newline (`\n`),
+carriage return (`\r`), horizontal tab (`\t`), and vertical tab (`\v`)) are
+handled before and after statements delimited with `{%` and `%}` sequences,
+respectively.
+
+Adding a minus sign (`-`)  after a `{%` sequence (`{%-`) will remove whitespaces
+before the sequence and after the last non-whitespace character before the sequence.
+
+Adding a minus sign (`-`)  before a `%}` sequence (`-%}`) will remove whitespaces
+after the sequence and before the first non-whitespace character after the sequence.
+
+## BUGS
+
+The template content is handled by handwritten parsers, that even being well
+tested, may be subject of parsing bugs. Please report any issues to:
+<https://github.com/blogc/blogc>
+
+## AUTHOR
+
+Rafael G. Martins &lt;<rafael@rafaelmartins.eng.br>&gt;
+
+## SEE ALSO
+
+blogc(1), blogc-source(7), strcmp(3), strftime(3)

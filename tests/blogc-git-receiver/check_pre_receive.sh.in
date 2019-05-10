@@ -1,0 +1,304 @@
+#!@BASH@
+
+set -xe -o pipefail
+
+export LC_ALL=C
+
+TEMP="$(mktemp -d)"
+[[ -n "${TEMP}" ]]
+
+trap_func() {
+    [[ -e "${TEMP}/output.txt" ]] && cat "${TEMP}/output.txt"
+    [[ -n "${TEMP}" ]] && rm -rf "${TEMP}"
+}
+
+trap trap_func EXIT
+
+mkdir -p "${TEMP}/repos"
+git init --bare "${TEMP}/repos/foo.git" &> /dev/null
+
+SELF="@abs_top_builddir@/blogc-git-receiver"
+
+ln -s "${SELF}" "${TEMP}/repos/foo.git/hooks/pre-receive"
+
+cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/foo
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/bar
+EOF
+
+cd "${TEMP}/repos/foo.git"
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "warning: no reference to master branch found. nothing to deploy." "${TEMP}/output.txt" &> /dev/null
+
+cat > "${TEMP}/tmp.txt" <<EOF
+blob
+mark :1
+data 63
+all:
+	mkdir -p \$(OUTPUT_DIR)
+	echo lol > \$(OUTPUT_DIR)/foo.txt
+
+reset refs/heads/master
+commit refs/heads/master
+mark :2
+author Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476139736 +0200
+committer Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476139736 +0200
+data 11
+testing...
+M 100644 :1 Makefil
+
+EOF
+
+git fast-import < "${TEMP}/tmp.txt" &> /dev/null
+
+cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/foo
+0000000000000000000000000000000000000000 $(git rev-parse HEAD) refs/heads/master
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/bar
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "warning: no blogcfile or Makefile found. skipping ..." "${TEMP}/output.txt" &> /dev/null
+
+cd "${TEMP}"
+git init --bare "${TEMP}/repos/foo2.git" &> /dev/null
+ln -s "${SELF}" "${TEMP}/repos/foo2.git/hooks/pre-receive"
+
+cat > "${TEMP}/tmp.txt" <<EOF
+blob
+mark :1
+data 63
+all:
+	mkdir -p \$(OUTPUT_DIR)
+	echo lol > \$(OUTPUT_DIR)/foo.txt
+
+reset refs/heads/master
+commit refs/heads/master
+mark :2
+author Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476139736 +0200
+committer Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476139736 +0200
+data 11
+testing...
+M 100644 :1 Makefile
+
+EOF
+
+cd "${TEMP}/repos/foo2.git"
+git fast-import < "${TEMP}/tmp.txt" &> /dev/null
+
+cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/foo
+0000000000000000000000000000000000000000 $(git rev-parse HEAD) refs/heads/master
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/bar
+EOF
+
+cat > "${TEMP}/blogc-git-receiver.ini" <<EOF
+[repo:foo2a.git]
+symlink = ${TEMP}/guda
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. BLOGC_GIT_RECEIVER_BUILDS_DIR="${TEMP}/foooo" ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "echo lol" "${TEMP}/output.txt" &> /dev/null
+
+[[ -h htdocs ]]
+[[ "$(cat htdocs/foo.txt)" == "lol" ]]
+
+cat >> "${TEMP}/blogc-git-receiver.ini" <<EOF
+[repo:foo2.git]
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. BLOGC_GIT_RECEIVER_BUILDS_DIR="${TEMP}/foooo" ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "echo lol" "${TEMP}/output.txt" &> /dev/null
+
+[[ -h htdocs ]]
+[[ "$(cat htdocs/foo.txt)" == "lol" ]]
+
+cat >> "${TEMP}/blogc-git-receiver.ini" <<EOF
+symlink = ${TEMP}/chunda
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. BLOGC_GIT_RECEIVER_BUILDS_DIR="${TEMP}/foooo" ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "echo lol" "${TEMP}/output.txt" &> /dev/null
+
+[[ -h "${TEMP}/chunda" ]]
+[[ "$(cat "${TEMP}/chunda/foo.txt")" == "lol" ]]
+
+DEST="$(readlink "${TEMP}/chunda")"
+[[ -e "${DEST}" ]]
+[[ "${DEST}" == "${TEMP}/foooo/"* ]]
+
+cd "${TEMP}"
+git init --bare "${TEMP}/repos/foo2a.git" &> /dev/null
+ln -s "${SELF}" "${TEMP}/repos/foo2a.git/hooks/pre-receive"
+
+cat > "${TEMP}/tmp.txt" <<EOF
+blob
+mark :1
+data 64
+all:
+	mkdir -p \$(OUTPUT_DIR)
+	echo lol > \$(OUTPUT_DIR)/foo.txt
+
+
+commit refs/heads/master
+mark :2
+author Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476142917 +0200
+committer Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476142917 +0200
+data 12
+testing2...
+M 100644 :1 Makefile
+
+EOF
+
+cd "${TEMP}/repos/foo2a.git"
+ln -s "${DEST}" "${TEMP}/guda"
+git fast-import < "${TEMP}/tmp.txt" &> /dev/null
+
+cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/foo
+0000000000000000000000000000000000000000 $(git rev-parse HEAD) refs/heads/master
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/bar
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "echo lol" "${TEMP}/output.txt" &> /dev/null
+
+[[ -h "${TEMP}/guda" ]]
+[[ "$(cat "${TEMP}/guda/foo.txt")" == "lol" ]]
+[[ "${DEST}" != "$(readlink "${TEMP}/guda")" ]]
+[[ ! -e "${DEST}" ]]
+
+DEST="$(readlink "${TEMP}/guda")"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h "${TEMP}/guda" ]]
+[[ "$(cat "${TEMP}/guda/foo.txt")" == "lol" ]]
+[[ "${DEST}" != "$(readlink "${TEMP}/guda")" ]]
+[[ ! -e "${DEST}" ]]
+
+cd ..
+
+DEST="$(readlink "${TEMP}/guda")"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./foo2a.git/hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h "${TEMP}/guda" ]]
+[[ "$(cat "${TEMP}/guda/foo.txt")" == "lol" ]]
+[[ "${DEST}" != "$(readlink "${TEMP}/guda")" ]]
+[[ ! -e "${DEST}" ]]
+
+cd ..
+
+DEST="$(readlink "${TEMP}/guda")"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./repos/foo2a.git/hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h "${TEMP}/guda" ]]
+[[ "$(cat "${TEMP}/guda/foo.txt")" == "lol" ]]
+[[ "${DEST}" != "$(readlink "${TEMP}/guda")" ]]
+[[ ! -e "${DEST}" ]]
+
+DEST="$(readlink "${TEMP}/guda")"
+[[ -e "${DEST}" ]]
+
+cd "${TEMP}"
+git init --bare "${TEMP}/repos/foo3.git" &> /dev/null
+ln -s "${SELF}" "${TEMP}/repos/foo3.git/hooks/pre-receive"
+
+cat > "${TEMP}/tmp.txt" <<EOF
+blob
+mark :1
+data 64
+all:
+	mkdir -p \$(OUTPUT_DIR)
+	echo lol > \$(OUTPUT_DIR)/foo.txt
+
+
+commit refs/heads/master
+mark :2
+author Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476142917 +0200
+committer Rafael G. Martins <rafael@rafaelmartins.eng.br> 1476142917 +0200
+data 12
+testing2...
+M 100644 :1 Makefile
+
+EOF
+
+cd "${TEMP}/repos/foo3.git"
+ln -s "${DEST}" htdocs
+git fast-import < "${TEMP}/tmp.txt" &> /dev/null
+
+cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/foo
+0000000000000000000000000000000000000000 $(git rev-parse HEAD) refs/heads/master
+0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 refs/heads/bar
+EOF
+
+SHELL="${SELF}" HOME="${TEMP}" GIT_DIR=. ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt"
+grep "echo lol" "${TEMP}/output.txt" &> /dev/null
+
+[[ -h htdocs ]]
+[[ "$(cat htdocs/foo.txt)" == "lol" ]]
+[[ "${DEST}" != "$(readlink htdocs)" ]]
+[[ ! -e "${DEST}" ]]
+
+DEST="$(readlink htdocs)"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h htdocs ]]
+[[ "$(cat htdocs/foo.txt)" == "lol" ]]
+[[ "${DEST}" != "$(readlink htdocs)" ]]
+[[ ! -e "${DEST}" ]]
+
+cd ..
+
+DEST="$(readlink foo3.git/htdocs)"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./foo3.git/hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h foo3.git/htdocs ]]
+[[ "$(cat foo3.git/htdocs/foo.txt)" == "lol" ]]
+[[ "${DEST}" != "$(readlink foo3.git/htdocs)" ]]
+[[ ! -e "${DEST}" ]]
+
+cd ..
+
+DEST="$(readlink repos/foo3.git/htdocs)"
+HOME="${TEMP}" ${TESTS_ENVIRONMENT} ./repos/foo3.git/hooks/pre-receive 2>&1 | tee "${TEMP}/output.txt"
+
+[[ -h repos/foo3.git/htdocs ]]
+[[ "$(cat repos/foo3.git/htdocs/foo.txt)" == "lol" ]]
+[[ "${DEST}" != "$(readlink repos/foo3.git/htdocs)" ]]
+[[ ! -e "${DEST}" ]]
+
+if [[ "x@MAKE_@" == "xenabled" ]]; then
+    cd "${TEMP}"
+    git init --bare "${TEMP}/repos/foo4.git" &> /dev/null
+    ln -s "${SELF}" "${TEMP}/repos/foo4.git/hooks/pre-receive"
+
+    cat > "${TEMP}/tmp.txt" <<EOF
+blob
+mark :1
+data 0
+
+reset refs/heads/master
+commit refs/heads/master
+mark :2
+author Rafael G. Martins <rafael@rafaelmartins.eng.br> 1483558736 +0100
+committer Rafael G. Martins <rafael@rafaelmartins.eng.br> 1483558736 +0100
+data 12
+testing3...
+M 100644 :1 blogcfile
+
+EOF
+
+    cd "${TEMP}/repos/foo4.git"
+    git fast-import < "${TEMP}/tmp.txt" &> /dev/null
+
+    cat > "${TEMP}/payload.txt" <<EOF
+0000000000000000000000000000000000000000 $(git rev-parse HEAD) refs/heads/master
+EOF
+
+    SHELL="${SELF}" BLOGC_GIT_RECEIVER_BASE_DIR="${TEMP}" PATH="@abs_top_builddir@:${PATH}" GIT_DIR=. ${TESTS_ENVIRONMENT} ./hooks/pre-receive < "${TEMP}/payload.txt" 2>&1 | tee "${TEMP}/output.txt" || true
+    grep "blogc-make: error: settings: " "${TEMP}/output.txt" &> /dev/null
+fi
+
+rm "${TEMP}/output.txt"

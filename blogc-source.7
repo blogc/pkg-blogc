@@ -1,0 +1,418 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "BLOGC\-SOURCE" "7" "May 2019" "Rafael G. Martins" "blogc Manual"
+.
+.SH "NAME"
+\fBblogc\-source\fR \- blogc\'s source file format
+.
+.SH "DESCRIPTION"
+Source files are used as input data to the blogc(1) compiler\. They provide variables and content, that are used by the compiler to fill the gaps available in the templates (see blogc\-template(7))\.
+.
+.P
+The syntax of the source files is designed to be as simple as possible\. The variables are defined in the top of the file as key\-value lines, and the content is defined right after the variables\.
+.
+.P
+Content is written in a markup language that is similar to John Gruber\'s Markdown, but that is NOT Markdown\. This language is very simple, while powerful enough to write big posts\.
+.
+.P
+Content must be valid UTF\-8\.
+.
+.SH "SOURCE VARIABLES"
+Variables are key\-value lines\. The variable name must be upper\-case, starting with a letter and following with one or more letters and/or underscores\. The value is separated from the variable name with a \':\' and finishes in the end of the line\. Multi\-line values are not supported\.
+.
+.IP "" 4
+.
+.nf
+
+VARIABLE1: Value of variable one
+VARIABLE2: Value of variable two
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+.
+.fi
+.
+.IP "" 0
+.
+.P
+All the variables defined in the source files are local and will override global variables provided to blogc(1) in the command\-line, but just inside blocks that handle local variables\. See blogc\-template(7) for details\.
+.
+.P
+The \fBDATE\fR variable is special, and represents the publishing date of the post\. It may be formatted with the \fBDATE_FORMAT\fR variable, if provided, otherwise will be kept as is\. The proper way to access the date from the template is to use the \fBDATE_FORMATTED\fR variable, that will contain the formatted date, or the original date, depending on whether the \fBDATE_FORMAT\fR variable is provided or not\.
+.
+.P
+The \fBDATE\fR variable should be in the following format: \fByyyy\-mm\-dd hh:mm:ss\fR\. You can omit seconds, minutes and hours if you want, they will be filled with \'0\'\. Allowed formats are \fByyyy\-mm\-dd hh:mm:ss\fR, \fByyyy\-mm\-dd hh:mm\fR, \fByyyy\-mm\-dd hh\fR and \fByyyy\-mm\-dd\fR
+.
+.P
+The \fBDATE_FORMAT\fR variable should be passed to blogc(1) as a global variable\. Its value must be a valid strftime(3) format\.
+.
+.P
+The source parser will also automatically generate a variable called \fBFILENAME\fR, that stores the name of the source file, without its extension\. This is useful for building permalinks in templates\. This variable can\'t be overriden by an explicit definition in source file\.
+.
+.P
+The variable \fBFIRST_HEADER\fR is created by the source parser by default, containing the unparsed value of the first header found in the source file\. The content is not parsed but HTML entities are encoded\. Headers inside blockquotes are ignored\. This variable can be overriden by an explicit definition in source file, that must have the HTML entities escaped manually\.
+.
+.P
+Another variable, \fBDESCRIPTION\fR, will be automatically created by the source parser\. It contains the unparsed content of the first paragraph found in the source file\. The content is not parsed but HTML entities are encoded\. Paragraphs inside blockquotes are ignored\. This variable can be overriden by an explicit definition in source file, that must have the HTML entities escaped manually\. This is useful to add "description" meta\-tags to HTML templates\. It may be needed to truncate the variable size to an maximum length, take a look at blogc\-template(7)\.
+.
+.SH "SOURCE CONTENT \- BLOCK ELEMENTS"
+.
+.SS "Paragraphs"
+Paragraphs are simple blocks of text\.
+.
+.IP "" 4
+.
+.nf
+
+This is a paragraph\.
+
+This is another paragraph\.
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Headers"
+Headers are defined starting with \'#\' characters, then number of characters is the level of the header\.
+.
+.IP "" 4
+.
+.nf
+
+# H1
+
+## H2
+
+### H3
+
+#### H4
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Each header will have an \fBid\fR attribute, that is a lowercase version of the unparsed header title, with non\-alphanumeric characters replaced by \'\-\'\. These \fBid\fRs can be used to create anchor links to specific sections of your content\.
+.
+.SS "Blockquotes"
+Blockquotes are defined with lines starting with \'>\' characters\. Content defined inside a blockquote is parsed again, so all the block elements are allowed inside blockquotes\. The indentation after the \'>\' character must be preserved in the begin of each blockquote line\.
+.
+.IP "" 4
+.
+.nf
+
+> Hello,
+>
+> This is the blockquote example!
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Unordered Lists"
+Unordered lists are defined with lines starting with \'*\', \'+\' or \'\-\'\. The same starting character must be used for all the list items, and the indentation after the starting character must be preserved in the begin of each line\.
+.
+.IP "" 4
+.
+.nf
+
+* First item
+* Second item
+* Third item
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Multi\-line items are supported\. Content must be aligned properly:
+.
+.IP "" 4
+.
+.nf
+
+* First item
+  Continuation of first item
+* Second item
+* Third item
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Ordered Lists"
+Ordered lists are defined with lines starting with a number and a \'\.\' character\. The indentation after the starting character must be preserved in the begin of each line, meaning that the content of the items must be aligned\. The order and value of the numbers is ignored\.
+.
+.IP "" 4
+.
+.nf
+
+1\.  First item
+2\.  Second item
+10\. Tenth item
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Multi\-line items are supported\. Content must be aligned properly:
+.
+.IP "" 4
+.
+.nf
+
+1\.  First item
+    Continuation of first item
+2\.  Second item
+10\. Tenth item
+.
+.fi
+.
+.IP "" 0
+.
+.P
+To use numbers with \'\.\' character in a non\-list string, you must escape the \'\.\'\.
+.
+.IP "" 4
+.
+.nf
+
+1234\e\. This is not a list
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Code Blocks"
+Code blocs are defined by indenting the lines with one or more whitespace characters\.
+.
+.IP "" 4
+.
+.nf
+
+This is a paragraph\.
+
+    This is a code block\.
+    Some more code\.
+
+This is another paragraph\.
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Horizontal Rules"
+Horizontal rules are defined as a paragraph with a sequence of 2 or more \'*\', \'+\' or \'\-\' characters\.
+.
+.IP "" 4
+.
+.nf
+
+This is a paragraph before horizontal rule
+
+***
+
+This is a paragraph after horizontal rule
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The horizontal rule must not be on its own paragraph, otherwise it will be parsed as a continuation of the previous paragraph\.
+.
+.SS "HTML Blocks"
+HTML blocks are paragraphs started with \'<\' character\. Everything is kept untouched in HTML blocks, until the next paragraph\.
+.
+.IP "" 4
+.
+.nf
+
+<p>This is raw HTML</p>
+
+This is an usual paragraph
+
+<p>This is more raw HTML</p>
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Excerpt Separator"
+The excerpt is separated from the full content of a page/post using a paragraph with a sequence of 2 or more \'\.\' characters\.
+.
+.P
+After parsing, the excerpt will be part of the full content as well\.
+.
+.SH "SOURCE CONTENT \- INLINE ELEMENTS"
+.
+.SS "Bold"
+Bold text is defined with 2 \'*\' or \'_\' before and after the text\.
+.
+.IP "" 4
+.
+.nf
+
+Bold text: **text**
+Bold text: __text__
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Italic"
+Italic text is defined with 1 \'*\' or \'_\' before and after the text\.
+.
+.IP "" 4
+.
+.nf
+
+Italic text: *text*
+Italic text: _text_
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Bold and Italic"
+Bold and italic text is defined mixing markers, like:
+.
+.IP "" 4
+.
+.nf
+
+Italic and bold text: _**text**_
+Italic and bold text: *__text__*
+Italic and bold text: __*text*__
+Italic and bold text: **_text_**
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Code"
+Code is defined with 1 or 2 \'`\' before and after the text\.
+.
+.IP "" 4
+.
+.nf
+
+This is inline code: `code`
+This is inline code: ``code``
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The later form is particularly useful when a \'`\' is part of the code, because escaping delimiters with \'\e\' is not possible\.
+.
+.SS "Images"
+Images are defined using the following syntax:
+.
+.IP "" 4
+.
+.nf
+
+This is an image: ![This is the image alt text](picture\.jpg)
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Whitespace characters and new lines are allowed between alt text and image URL:
+.
+.IP "" 4
+.
+.nf
+
+This is an image: ![This is the image alt text]
+(picture\.jpg)
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Links"
+Links are defined using the following syntax:
+.
+.IP "" 4
+.
+.nf
+
+To learn more about blogc, [click here](https://blogc\.rgm\.io)\.
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Whitespace characters and new lines are allowed between link text and link URL:
+.
+.IP "" 4
+.
+.nf
+
+To learn more about blogc, [click here]
+(https://blogc\.rgm\.io)\.
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Image Links"
+Links can be combined with images:
+.
+.IP "" 4
+.
+.nf
+
+[![This is the image alt text](picture\.jpg)](https://blogc\.rgm\.io)
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Whitespace characters and new lines are allowed between link text and link URL, and between alt text and image URL:
+.
+.IP "" 4
+.
+.nf
+
+[![This is the image alt text]
+(picture\.jpg)]
+(https://blogc\.rgm\.io)
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Automatic Links"
+Automatic link is defined with 2 \'[\' before and 2 \']\' after the URL\.
+.
+.IP "" 4
+.
+.nf
+
+To learn more about blogc, visit [[https://blogc\.rgm\.io]]\.
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Line break"
+Line breaks can be added after a paragraph line adding 2 or more white spaces to the end of the line\.
+.
+.SS "En dashes and Em dashes"
+Sequences of 2 \'\-\' characters are converted to an En dash HTML entity\. Sequences of 3 \'\-\' characters are converted to an Em dash HTML entity\.
+.
+.SH "BUGS"
+The source content is handled by handwritten parsers, that even being well tested, may be subject of parsing bugs\. Please report any issues to: \fIhttps://github\.com/blogc/blogc\fR
+.
+.SH "AUTHOR"
+Rafael G\. Martins <\fIrafael@rafaelmartins\.eng\.br\fR>
+.
+.SH "SEE ALSO"
+blogc(1), blogc\-template(7), strftime(3)

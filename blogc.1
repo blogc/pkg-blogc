@@ -1,0 +1,150 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "BLOGC" "1" "May 2019" "Rafael G. Martins" "blogc Manual"
+.
+.SH "NAME"
+\fBblogc\fR \- a blog compiler
+.
+.SH "SYNOPSIS"
+\fBblogc\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR] \fISOURCE\fR
+.
+.br
+\fBblogc\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR] [\fISOURCE\fR \.\.\.]
+.
+.br
+\fBblogc\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR] [\fISOURCE\fR \.\.\.]
+.
+.br
+\fBblogc\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] \fB\-p\fR \fIKEY\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] [\fISOURCE\fR \.\.\.]
+.
+.br
+\fBblogc\fR \fB\-i\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR] < \fIFILE_LIST\fR
+.
+.br
+\fBblogc\fR \fB\-i\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR] < \fIFILE_LIST\fR
+.
+.br
+\fBblogc\fR \fB\-i\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] \fB\-p\fR \fIKEY\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] < \fIFILE_LIST\fR
+.
+.br
+\fBecho\fR \fB\-e\fR "\fISOURCE\fR\en\.\.\." | \fBblogc\fR \fB\-i\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR]
+.
+.br
+\fBecho\fR \fB\-e\fR "\fISOURCE\fR\en\.\.\." | \fBblogc\fR \fB\-i\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.] \fB\-t\fR \fITEMPLATE\fR [\fB\-o\fR \fIOUTPUT\fR]
+.
+.br
+\fBecho\fR \fB\-e\fR "\fISOURCE\fR\en\.\.\." | \fBblogc\fR \fB\-i\fR \fB\-l\fR [\fB\-e\fR \fISOURCE\fR] \fB\-p\fR \fIKEY\fR [\fB\-d\fR] [\fB\-D\fR \fIKEY\fR=\fIVALUE\fR \.\.\.]
+.
+.br
+\fBblogc\fR [\fB\-h\fR|\fB\-v\fR]
+.
+.SH "DESCRIPTION"
+\fBblogc\fR compiles source files and templates into blog/website resources\. It gets one (or more) source files and a template, and generates an output file, based on the template and the content read from the source file(s)\. It was designed to be used with make(1)\.
+.
+.P
+\fBblogc\fR works on two modes:
+.
+.TP
+\fBentry\fR
+Default mode, first example in \fISYNOPSIS\fR\. Accepts only one source file, and process it as a single entry of the blog/website, like a static page or a post\.
+.
+.TP
+\fBlisting\fR
+Listing mode, second example in \fISYNOPSIS\fR, activated when calling \fBblogc\fR with \fB\-l\fR option\. Accepts multiple source files, and allow users to iterate over the content of all the source files to produce listing pages, like indexes and feeds\. By providing another source file to \fBblogc\fR with \fB\-e\fR option, third example in \fISYNOPSIS\fR, its content will be available for usage during listing, similar to the default entry mode\. This is useful for users that want to have an index page with content and posts listing together\. See blogc\-template(7) for details\.
+.
+.SH "OPTIONS"
+.
+.TP
+\fB\-d\fR
+Activates debug\.
+.
+.TP
+\fB\-i\fR
+Reads list of source files from standard input\. Content of standard input is parsed as a file where each line is a file path\. Empty lines and lines starting with \fB#\fR are ignored\. If some source files are provided to command line while using this option, they will be parsed \fBbefore\fR the files read from standard input\.
+.
+.TP
+\fB\-l\fR
+Activates listing mode, allowing user to provide multiple source files\. See blogc\-source(7) for details\.
+.
+.TP
+\fB\-e\fR \fISOURCE\fR
+When used together with \fB\-l\fR the source file will be parsed and its content will be made available for usage in the templates in listing mode\. See blogc\-template(7) for details\.
+.
+.TP
+\fB\-D\fR \fIKEY\fR=\fIVALUE\fR
+Set global configuration parameter\. \fIKEY\fR must be an ascii uppercase string, with only letters, numbers (after the first letter) and underscores (after the first letter)\. These parameters are available anywhere in templates, but may be overridden by local configuration parameters set in source files\. See blogc\-template(7) for details\.
+.
+.TP
+\fB\-p\fR \fIKEY\fR
+Show the value of a variable right after the source parsing and exits\. This is useful to get parameters for your \fBMakefile\fR, like the last page when implementing pagination, see blogc\-pagination(7) for details\. This option can also dump variables defined in a source file, if called without \fB\-l\fR\.
+.
+.TP
+\fB\-t\fR \fITEMPLATE\fR
+Template file\. It is a required option, if \fBblogc\fR needs to render something\. See blogc\-template(7) for details\.
+.
+.TP
+\fB\-o\fR \fIOUTPUT\fR
+Output file\. If provided this option, save the compiled output to the given file\. Otherwise, the compiled output is sent to \fBstdout\fR\.
+.
+.TP
+\fB\-v\fR
+Show program name, version and exit\.
+.
+.TP
+\fB\-h\fR
+Show help message and exit\.
+.
+.SH "FILES"
+The \fBblogc\fR command expects a template file blogc\-template(7), one (or more) source files blogc\-source(7) and an output file, if wanted\. Templates and source files must have valid UTF\-8 content\.
+.
+.SH "ENVIRONMENT"
+No environment variables are required by \fBblogc\fR, but global timezone will be used by locale\-dependant datetime input field descriptors (like \fB%c\fR), and can be overridden using environment variables\. See strftime(3)\.
+.
+.SH "EXAMPLES"
+Build index from source files:
+.
+.IP "" 4
+.
+.nf
+
+$ blogc \-l \-t template\.tmpl \-o index\.html source1\.txt source2\.txt source3\.txt
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Build index from source files, with additional content from \fBindex\.txt\fR:
+.
+.IP "" 4
+.
+.nf
+
+$ blogc \-l \-e index\.txt \-t template\.tmpl \-o index\.html source1\.txt source2\.txt source3\.txt
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Build entry page from source file:
+.
+.IP "" 4
+.
+.nf
+
+$ blogc \-t template\.tmpl \-o entry\.html entry\.txt
+.
+.fi
+.
+.IP "" 0
+.
+.SH "BUGS"
+\fBblogc\fR is based in handwritten parsers, that even being well tested, may be subject of parsing bugs\. Please report any issues to: \fIhttps://github\.com/blogc/blogc\fR
+.
+.SH "AUTHOR"
+Rafael G\. Martins <\fIrafael@rafaelmartins\.eng\.br\fR>
+.
+.SH "SEE ALSO"
+blogc\-source(7), blogc\-template(7), blogc\-pagination(7) make(1), strftime(3)

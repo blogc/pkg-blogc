@@ -1,0 +1,169 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "BLOGCFILE" "5" "May 2019" "Rafael G. Martins" "blogc Manual"
+.
+.SH "NAME"
+\fBblogcfile\fR \- blogc\-make\'s configuration file
+.
+.SH "DESCRIPTION"
+\fBblogcfile\fR is the configuration file for blogc\-make(1), that is a simple build tool for blogc(1)\. It is an INI\-style file, with some predefined sections, that will provide the data required by blogc\-make(1) rules to build websites\.
+.
+.P
+\fBblogcfile\fR must be valid UTF\-8\.
+.
+.SH "OPTIONS"
+.
+.SS "Global variables"
+The \fB[global]\fR section contains all the blogc(1) variables that should be passed to all blogc(1) calls\.
+.
+.P
+The following variables are required and should be always provided:
+.
+.TP
+\fBAUTHOR_NAME\fR
+The name of the website main author\.
+.
+.TP
+\fBAUTHOR_EMAIL\fR
+The email of the website main author\.
+.
+.TP
+\fBBASE_DOMAIN\fR
+The base domain of the website\.
+.
+.TP
+\fBSITE_TITLE\fR
+The website title\.
+.
+.TP
+\fBSITE_TAGLINE\fR
+The website tagline\.
+.
+.SS "Settings"
+blogc\-make(1) relies on a predefined set of rules to build the websites, however these rules can be customized with the following settings, from the \fB[settings]\fR section:
+.
+.IP "\(bu" 4
+\fBatom_ext\fR (default: \fB\.xml\fR): The extension of the generated Atom feeds\.
+.
+.IP "\(bu" 4
+\fBatom_order\fR (default: \fBDESC\fR): The ordering (\fBASC\fR or \fBDESC\fR) of the Atom feeds\. Please note that the files are not sorted by date, they are sorted by their order in the \fB[posts]\fR section\.
+.
+.IP "\(bu" 4
+\fBatom_posts_per_page\fR (default: \fB10\fR): Number of posts per page in the Atom feeds\. If negative, all the posts are included\. If \fB0\fR, no Atom feeds are generated\.
+.
+.IP "\(bu" 4
+\fBatom_prefix\fR (default: \fBatom\fR): The prefix of the generated Atom feeds\. It is relative to the output directory\. With the default values of the settings, the main Atom feed will be \fBatom\.xml\fR, the Atom feed for the \fBfoo\fR tag will be \fBatom/foo\.xml\fR and so on\.
+.
+.IP "\(bu" 4
+\fBatom_template\fR (default: internal template) The template file that should be used when building Atom feeds\. This file is relative to \fBtemplate_dir\fR\. If not provided, an internal default template will be used instead\. The internal template can be dumped using the \fBatom_dump\fR blogc\-make(1) rule\.
+.
+.IP "\(bu" 4
+\fBcontent_dir\fR (default: \fBcontent\fR): The directory that stores the source files\. This directory is relative to \fBblogcfile\fR\.
+.
+.IP "\(bu" 4
+\fBdate_format\fR (default: \fB%b %d, %Y, %I:%M %p GMT\fR): The strftime(3) format that should be used when formating dates\. Please note that the times are always handled as UTC/GMT\.
+.
+.IP "\(bu" 4
+\fBhtml_ext\fR (default: \fB/index\.html\fR): The extension of the generated HTML files\. The default value will result on friendly URL, by creating directories with \fBindex\.html\fR files inside, instead of creating the HTML file directly\. The \fBindex\fR page is a special case: instead of generating something like \fB/index/index\.html\fR, it will generate \fB/index\.html\fR, because this is behavior that most users would expect\.
+.
+.IP "\(bu" 4
+\fBhtml_order\fR (default: \fBDESC\fR): The ordering (\fBASC\fR or \fBDESC\fR) of the posts in the listing indexes\. Please note that the files are not sorted by date, they are sorted by their order in the \fB[posts]\fR section\.
+.
+.IP "\(bu" 4
+\fBindex_prefix\fR (default: unset): The prefix of the index HTML page, that is the listing of blog posts\. This option is useful if the user wants to host a page in the root of the website, and move the posts listing index to a subdirectory\.
+.
+.IP "\(bu" 4
+\fBlisting_entry\fR (default: unset): The page that will be included in the listing pages of the website, without the page prefix and without the extension, only the "slug" should be used\. See blogc(1) and the description of \fBlisting_entry\fR block in blogc\-template(7) for details\.
+.
+.IP "\(bu" 4
+\fBlocale\fR (default: unset): The locale to be used when calling blogc(1)\. E\.g\. \fBen_US\.UTF\-8\fR\.
+.
+.IP "\(bu" 4
+\fBmain_template\fR (default: \fBmain\.tmpl\fR): The template file that should be used when building HTML files\. This file is relative to \fBtemplate_dir\fR\.
+.
+.IP "\(bu" 4
+\fBpagination_prefix\fR (default: \fBpage\fR): The prefix of the generated pagination pages\. It is relative to the output directory\.
+.
+.IP "\(bu" 4
+\fBpost_prefix\fR (default: \fBpost\fR): The prefix of the posts file names\. It is used for both content and output directories, and is relative to \fBcontent_dir\fR and the output directory\.
+.
+.IP "\(bu" 4
+\fBposts_per_page\fR (default: \fB10\fR): Number of posts per page in the pagination pages\. If negative, all the posts are included\. If \fB0\fR, no post listing pages are generated\. Also, if negative or \fB0\fR, the \fBpagination\fR build rule is disabled\.
+.
+.IP "\(bu" 4
+\fBposts_sort\fR (default: \fBfalse\fR): If true, blogc(1) will sort the posts by date, despite the order of the posts in the \fB[posts]\fR section, in descending order\. This setting is compatible with \fBhtml_order\fR and \fBatom_order\fR settings, to control the order of the posts\.
+.
+.IP "\(bu" 4
+\fBsource_ext\fR (default: \fB\.txt\fR): The extension of the source files\.
+.
+.IP "\(bu" 4
+\fBtag_prefix\fR (default: \fBtag\fR): The prefix of the generated tag listing index pages\. It is relative to the output directory\.
+.
+.IP "\(bu" 4
+\fBtemplate_dir\fR (default: \fBtemplates\fR): The directory that stores the template files\. This directory is relative to \fBblogcfile\fR\.
+.
+.IP "" 0
+.
+.SS "Posts listing"
+The \fB[posts]\fR section is a listing of the posts that will be included in the website\. They should be listed without the post prefix and without the extension, only the "slugs" should be used\. For example, with default settings, if the source of the post is \fBcontent/post/foo\.txt\fR, the line added to the \fB[posts]\fR section is \fBfoo\fR\.
+.
+.P
+All the posts are relative to the \fBpost_prefix\fR in the root of the website\.
+.
+.SS "Pages listing"
+The \fB[pages]\fR section is a listing of the pages that will be included in the website\. They should be listed without the page prefix and without the extension, only the "slugs" should be used\. For example, with default settings, if the source of the page is \fBcontent/foo\.txt\fR, the line added to the \fB[pages]\fR section is \fBfoo\fR\.
+.
+.P
+All the pages are relative to the root of the website\.
+.
+.SS "Tags listing"
+The \fB[tags]\fR section is a listing of the tags that should be listed in the website\. blogc\-make(1) will generate post listing indexes and Atom feeds for each tag listed in the section\.
+.
+.P
+The tags will be also provided to blogc as a \fBMAKE_TAGS\fR variable, that is a space\-separated list of the tags, useful to generate tag clouds using the \fBforeach\fR template iterator\. See blogc\-template(7)\.
+.
+.SS "Copy listing"
+The \fB[copy]\fR section is a listing of the files that should be copied to the output directory\.
+.
+.P
+All the files are relative to the \fBblogcfile\fR, and their directory structure will be built inside the output directory\.
+.
+.SH "EXAMPLE"
+.
+.nf
+
+[global]
+AUTHOR_NAME = Author
+AUTHOR_EMAIL = author@example\.org
+SITE_TITLE = Site Title
+SITE_TAGLINE = Site Tagline
+BASE_DOMAIN = http://example\.org
+
+[settings]
+locale = en_US\.utf8
+
+[posts]
+post1
+post2
+
+[pages]
+about
+
+[tags]
+tag1
+tag2
+
+[copy]
+assets/custom\.css
+.
+.fi
+.
+.SH "BUGS"
+Please report any issues to: \fIhttps://github\.com/blogc/blogc\fR
+.
+.SH "AUTHOR"
+Rafael G\. Martins <\fIrafael@rafaelmartins\.eng\.br\fR>
+.
+.SH "SEE ALSO"
+blogc(1), blogc\-make(1), blogc\-template(7) strftime(3)
