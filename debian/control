@@ -1,0 +1,38 @@
+Source: blogc
+Section: text
+Priority: optional
+Maintainer: Rafael G. Martins <rafael@rafaelmartins.eng.br>
+Build-Depends: debhelper (>= 10), libcmocka-dev, git
+Standards-Version: 4.1.2
+Homepage: https://blogc.rgm.io/
+Vcs-Git: https://github.com/blogc/pkg-blogc.git
+Vcs-Browser: https://github.com/blogc/pkg-blogc
+
+Package: blogc
+Architecture: any
+Section: text
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Blog compiler.
+ blogc(1) is a blog compiler. It compiles source files and templates into
+ blog/website resources.
+
+Package: blogc-git-receiver
+Architecture: any
+Section: devel
+Depends: ${shlibs:Depends}, ${misc:Depends}, git, make, blogc
+Description: Simple login shell/git hook to deploy blogc websites.
+ blogc-git-receiver(1) is a simple login shell/git hook to deploy blogc websites.
+
+Package: blogc-make
+Architecture: any
+Section: devel
+Depends: ${shlibs:Depends}, ${misc:Depends}, blogc, blogc-runserver
+Description: Simple build tool for blogc.
+ blogc-make(1) is a simple build tool for blogc websites.
+
+Package: blogc-runserver
+Architecture: any
+Section: devel
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Simple HTTP server to test blogc websites.
+ blogc-runserver(1) is a simple HTTP server to test blogc websites.
